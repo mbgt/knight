@@ -12,11 +12,9 @@ import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.List;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static knight.ui.Model.Mode.SET;
 
@@ -30,7 +28,7 @@ class BoardPane extends JPanel {
     private final ImageIcon knightIcon;
     private final ImageIcon crossIcon;
 
-    private Map<Integer, JLabel> moveFieldMap = new HashMap<>();
+    private final Map<Integer, JLabel> moveFieldMap = new HashMap<>();
 
     public BoardPane(Model model) {
         this.model = model;
@@ -45,7 +43,7 @@ class BoardPane extends JPanel {
     }
 
     private void draw(Board board) {
-        Iterator<JLabel> fieldIerator = Arrays.asList(getComponents()).stream() //
+        Iterator<JLabel> fieldIerator = Arrays.stream(getComponents()) //
                 .map(JLabel.class::cast).iterator();
         moveFieldMap.clear();
         int[][] moves = board.getMoves();
@@ -81,7 +79,7 @@ class BoardPane extends JPanel {
             for (int col = 0; col < boardSize.dim().x(); col++) {
                 JLabel label = new JLabel();
                 label.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
-                label.addMouseListener(onClickField(label));
+                label.addMouseListener(onClickField());
                 label.setHorizontalAlignment(JLabel.CENTER);
                 add(label);
             }
@@ -90,7 +88,7 @@ class BoardPane extends JPanel {
         validate();
     }
 
-    private MouseListener onClickField(JLabel label) {
+    private MouseListener onClickField() {
         return new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -114,38 +112,43 @@ class BoardPane extends JPanel {
         moveFieldMap.values().forEach(l -> l.setForeground(l.getBackground()));
         setIcon(moveFieldMap.get(1), knightIcon);
         new SwingWorker<Void, Integer>() {
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            final LinkedList<Integer> orderedMoves = moveFieldMap.keySet().stream()
+                    .sorted().collect(LinkedList::new, LinkedList::add, LinkedList::addAll);
+            long lastDraw = new Date().getTime();
 
             @Override
-            protected Void doInBackground() throws Exception {
-                AtomicInteger delay = new AtomicInteger(1);
-                moveFieldMap.entrySet().stream().sorted(Comparator.comparing(Entry::getKey)).map(Entry::getKey)
-                        .forEach(key -> scheduler.schedule(() -> publish(key),
-                                800 * delay.getAndIncrement(), TimeUnit.MILLISECONDS));
-                scheduler.shutdown();
-                scheduler.awaitTermination(100, TimeUnit.SECONDS);
+            protected Void doInBackground() {
+                scheduler.scheduleAtFixedRate(() -> publish(0), 100, 100, TimeUnit.MILLISECONDS);
                 return null;
             }
 
             @Override
             protected void process(List<Integer> steps) {
-                steps.forEach(step -> {
-                    JLabel field = moveFieldMap.get(step);
+                if (orderedMoves.isEmpty()) {
+                    scheduler.shutdown();
+                } else if (new Date().getTime() - lastDraw > 800) {
+                    lastDraw = new Date().getTime();
+                    JLabel field = moveFieldMap.get(orderedMoves.remove());
                     field.setIcon(null);
                     field.setForeground(Color.black);
                     // Springer auf nächstes Feld schieben
-                    if (moveFieldMap.containsKey(step + 1)) {
-                        setIcon(moveFieldMap.get(step + 1), knightIcon);
+                    if (orderedMoves.size() > 0) {
+                        setIcon(moveFieldMap.get(orderedMoves.peek()), knightIcon);
                     }
                     field.invalidate();
-                });
+                }
             }
         }.execute();
     }
 
-    private ImageIcon loadIcon(String fileName) {
-        try {
-            return new ImageIcon(getClass().getResourceAsStream(fileName).readAllBytes());
+    private ImageIcon loadIcon(String name) {
+        try (var fileStream = getClass().getResourceAsStream(name)) {
+           if (fileStream != null) {
+               return new ImageIcon(fileStream.readAllBytes());
+           } else {
+               throw new RuntimeException("Missing icon: " + name);
+           }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -153,6 +156,7 @@ class BoardPane extends JPanel {
 
     private void setIcon(JLabel label, ImageIcon icon) {
         label.setIcon(new ImageIcon(icon.getImage().getScaledInstance(
-                label.getWidth() - 4, label.getHeight() - 4, Image.SCALE_SMOOTH)));
+                label.getWidth() - 4, label.getHeight() - 4, Image.SCALE_DEFAULT)));
+        label.invalidate();
     }
 }

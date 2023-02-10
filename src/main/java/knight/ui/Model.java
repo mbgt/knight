@@ -10,13 +10,16 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class Model {
-    static final int[][] SAMPLE = {{21, 14, 9, 4, 19}, {8, 1, 20, 15, 10}, {13, 22, 3, 18, 5}, {2, 7, 24, 11, 16}, {23, 12, 17, 6, 25}};
-
     enum Mode {SET, RUN, VIEW}
 
     enum BoardSize {
-        SIZE_5x5(new Dim(5, 5)), SIZE_6x5(new Dim(6, 5)), SIZE_6x6(new Dim(6, 6));
-        private Dim size;
+        SIZE_5x5(new Dim(5, 5)),
+        SIZE_6x4(new Dim(6, 4)),
+        SIZE_6x5(new Dim(6, 5)),
+        SIZE_6x6(new Dim(6, 6)),
+        SIZE_7x5(new Dim(7, 5)),
+        SIZE_7x6(new Dim(6, 4));
+        private final Dim size;
 
         BoardSize(Dim size) {
             this.size = size;
@@ -40,9 +43,9 @@ public class Model {
 
     private int threadCount = Engine.DEFAULT_THREAD_COUNT;
 
-    private List<Consumer<Mode>> modeListener = new ArrayList<>();
-    private List<Consumer<Model.BoardSize>> sizeListener = new ArrayList<>();
-    private List<Consumer<Board>> boardListener = new ArrayList<>();
+    private final List<Consumer<Mode>> modeListener = new ArrayList<>();
+    private final List<Consumer<Model.BoardSize>> sizeListener = new ArrayList<>();
+    private final List<Consumer<Board>> boardListener = new ArrayList<>();
 
     public Mode getMode() {
         return mode;

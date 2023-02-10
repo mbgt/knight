@@ -19,9 +19,9 @@ public class Board {
 
     final int[][] board;
     final Dim size;
-    final int ccyThreshold;
     int blacks;
     int x, y;
+    int step;
 
     Board(Board copy) {
         this.size = copy.size;
@@ -29,10 +29,10 @@ public class Board {
         for (int i = 0; i < this.size.x(); i++) {
             this.board[i] = Arrays.copyOf(copy.board[i], copy.size.y());
         }
+        this.blacks = copy.blacks;
+        this.step = copy.step;
         this.x = copy.x;
         this.y = copy.y;
-        this.blacks = copy.blacks;
-        this.ccyThreshold = copy.ccyThreshold;
     }
 
     public Board(Dim size) {
@@ -47,7 +47,6 @@ public class Board {
         for (Dim move : blacks) {
             this.board[move.x()][move.y()] = -1;
         }
-        this.ccyThreshold = (int) (0.1 * size.x() * size.y() + 1 + this.blacks);
     }
 
     public int[][] getMoves() {
@@ -67,19 +66,20 @@ public class Board {
     /**
      * Springt vom aktuellen Feld auf Feld mit Vektor (x,y)
      */
-    void move(int x, int y, int step) {
-        this.x += x;
-        this.y += y;
-        this.board[this.x][this.y] = step;
+    void move(Dim move) {
+        this.x += move.x();
+        this.y += move.y();
+        this.board[this.x][this.y] = ++step;
     }
 
     /**
      * Markiert aktuelles Feld und macht Sprungziel um Vektor (x,y) rückgängig
      */
-    void undo(int x, int y) {
+    void undo(Dim move) {
         this.board[this.x][this.y] = 0;
-        this.x -= x;
-        this.y -= y;
+        this.x -= move.x();
+        this.y -= move.y();
+        this.step--;
     }
 
     /**
@@ -90,5 +90,9 @@ public class Board {
             return board[this.x + move.x()][this.y + move.y()] == 0;
         }
         return false;
+    }
+
+    boolean isSolved() {
+        return step + blacks == size.area();
     }
 }

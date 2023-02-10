@@ -14,37 +14,42 @@ public class Engine {
 
     private final AtomicInteger solutions = new AtomicInteger(0);
     private final AtomicLong moveCounter = new AtomicLong(0);
+    private final BlockingQueue<Board> buffer = new ArrayBlockingQueue<>(256); // solution  buffer
+    private final AtomicInteger errors = new AtomicInteger(0);
+
     private final Board board;
-    private final BlockingQueue<Board> buffer = new ArrayBlockingQueue<>(32); // solution  buffer
     private final int threadCount;
+    private final int threshold;
 
     private Semaphore concurrent;
     private ExecutorService executor;
     private boolean stop;
-    private AtomicInteger errors = new AtomicInteger(0);
 
     public Engine(Dim size) {
         this(size, DEFAULT_THREAD_COUNT, new Dim[]{});
     }
+
     public Engine(Dim size, int threadCount) {
         this(size, threadCount, new Dim[]{});
     }
 
     public Engine(Dim size, int threadCount, Dim... blacks) {
-        board = new Board(size, blacks);
+        this.board = new Board(size, blacks);
         this.threadCount = threadCount;
+        this.threshold = threshold(board);
     }
 
     public Engine(Board board, int threadCount) {
         this.board = board;
         this.threadCount = threadCount;
+        this.threshold = threshold(board);
     }
 
     public static void main(String[] args) {
         Engine engine = new Engine(new Dim(5, 5), DEFAULT_THREAD_COUNT);
         Formatter formatter = new Formatter();
         long result = engine.solve(1, 1).map(formatter::format).peek(System.out::println).count();
-        System.out.println(String.format("Lösungen: %d, Züge: %d", result, engine.moveCounter.get()));
+        System.out.printf("Lösungen: %d, Züge: %d%n", result, engine.moveCounter.get());
     }
 
     /**
@@ -54,7 +59,8 @@ public class Engine {
         executor = Executors.newFixedThreadPool(threadCount);
         concurrent = new Semaphore(threadCount);
         Thread mainThread = new Thread(() -> {
-            solve(board, x, y, board.blacks+1);
+            board.move(new Dim(x, y));  // Startposition
+            solve(board);
             executor.shutdown();
             try {
                 executor.awaitTermination(1, TimeUnit.MINUTES);
@@ -83,6 +89,34 @@ public class Engine {
     }
 
 
+    /**
+     * Springt um x,y und sucht neue Sprungposition
+     */
+    private void solve(Board board) {
+        if (stop) return;
+        for (Dim move : Board.MOVES) {
+            if (board.check(move)) {
+                board.move(move);
+                step();
+                if (board.isSolved()) {
+                    solution(new Board(board));
+                } else {
+                    if (board.step == threshold) {
+                        lock();
+                        final Board subBoard = new Board(board);
+                        executor.submit(() -> {
+                            solve(subBoard);
+                            unlock();
+                        });
+                    } else {
+                        solve(board);
+                    }
+                }
+                board.undo(move);
+            }
+        }
+    }
+
     public int solutions() {
         return solutions.get();
     }
@@ -99,38 +133,8 @@ public class Engine {
         this.stop = true;
     }
 
-    /**
-     * Springt um x,y und sucht neue Sprungposition
-     *
-     * @param x
-     * @param x
-     */
-    private void solve(Board board, int x, int y, int cnt) {
-        if (stop) return;
-        board.move(x, y, cnt);
-        if (cnt < 6 + board.blacks) {
-            System.out.println(String.format("Step: %d, x: %d, y: %d", cnt, x, y));
-        }
-        if (cnt == board.size.x() * board.size.y()) {
-            solution(new Board(board));
-        } else {
-            for (Dim move : Board.MOVES) {
-                if (board.check(move)) {
-                    move(x, y, move);
-                    if (cnt == board.ccyThreshold) {
-                        lock();
-                        final Board subBoard = new Board(board);
-                        Future<?> solveFuture = executor.submit(() -> {
-                            solve(subBoard, move.x(), move.y(), cnt + 1);
-                            unlock();
-                        });
-                    } else {
-                        solve(board, move.x(), move.y(), cnt + 1);
-                    }
-                }
-            }
-        }
-        board.undo(x, y);
+    private int threshold(Board board) {
+        return (int) (0.1 * board.size.area() + 1 + board.blacks);
     }
 
     private void solution(Board board) {
@@ -145,7 +149,7 @@ public class Engine {
         }
     }
 
-    private void move(int x, int y, Dim move) {
+    private void step() {
         moveCounter.incrementAndGet();
     }
 
