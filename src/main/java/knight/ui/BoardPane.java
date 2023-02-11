@@ -12,9 +12,11 @@ import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static knight.ui.Model.Mode.SET;
 
@@ -29,17 +31,20 @@ class BoardPane extends JPanel {
     private final ImageIcon crossIcon;
 
     private final Map<Integer, JLabel> moveFieldMap = new HashMap<>();
+    private final AtomicInteger playing = new AtomicInteger(0);
+
 
     public BoardPane(Model model) {
         this.model = model;
         this.knightIcon = loadIcon("/knight.png");
         this.crossIcon = loadIcon("/cross.png");
         model.addSizeListener(this::resize);
-        model.addBoardListener(this::draw);
-        SwingUtilities.invokeLater(() -> {
-            resize(model.getBoardSize());
-            draw(model.getBoard());
+        model.addBoardListener(board -> {
+            playing.set(0);
+            draw(board);
         });
+        model.addModeListener(mode -> playing.set(0)); // trigger animation executors shutdown
+        resize(model.getBoardSize());
     }
 
     private void draw(Board board) {
@@ -51,11 +56,7 @@ class BoardPane extends JPanel {
             for (int col = 0; col < model.getBoardSize().dim().x(); col++) {
                 JLabel field = fieldIerator.next();
                 int move = moves[col][row];
-                Dim position = new Dim(col, row);
-                if (model.getMode() == SET && position.equals(model.getStartPosition())) {
-                    setIcon(field, knightIcon);
-                    field.setText("");
-                } else if (move == -1) {
+                if (move == -1) {
                     setIcon(field, crossIcon);
                     field.setText("");
                 } else if (move == 0) {
@@ -68,13 +69,17 @@ class BoardPane extends JPanel {
                 }
             }
         }
-        repaint();
+        if (model.getMode() == SET) {
+            JLabel knightField = (JLabel) getComponent(model.getStartPosition().linear(model.getBoardSize().dim()));
+            setIcon(knightField, knightIcon);
+        }
     }
 
     private void resize(Model.BoardSize boardSize) {
         removeAll();
         moveFieldMap.clear();
         setLayout(new GridLayout(boardSize.dim().y(), boardSize.dim().x()));
+
         for (int row = 0; row < boardSize.dim().y(); row++) {
             for (int col = 0; col < boardSize.dim().x(); col++) {
                 JLabel label = new JLabel();
@@ -84,8 +89,8 @@ class BoardPane extends JPanel {
                 add(label);
             }
         }
-        model.setBoard(new Board(boardSize.dim()));
         validate();
+        model.setBoard(new Board(boardSize.dim()));
     }
 
     private MouseListener onClickField() {
@@ -109,26 +114,31 @@ class BoardPane extends JPanel {
     }
 
     void animate() {
-        moveFieldMap.values().forEach(l -> l.setForeground(l.getBackground()));
         setIcon(moveFieldMap.get(1), knightIcon);
         new SwingWorker<Void, Integer>() {
-            final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-            final LinkedList<Integer> orderedMoves = moveFieldMap.keySet().stream()
+
+
+            private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            private final LinkedList<Integer> orderedMoves = moveFieldMap.keySet().stream()
                     .sorted().collect(LinkedList::new, LinkedList::add, LinkedList::addAll);
-            long lastDraw = new Date().getTime();
+            private long lastMove = new Date().getTime();
+            private final CountDownLatch waitForCompletion = new CountDownLatch(1);
 
             @Override
-            protected Void doInBackground() {
+            protected Void doInBackground() throws InterruptedException {
+                playing.incrementAndGet();
                 scheduler.scheduleAtFixedRate(() -> publish(0), 100, 100, TimeUnit.MILLISECONDS);
+                waitForCompletion.await();
                 return null;
             }
 
             @Override
             protected void process(List<Integer> steps) {
-                if (orderedMoves.isEmpty()) {
+                if (orderedMoves.isEmpty() || playing.get() == 0) {
+                    waitForCompletion.countDown();
                     scheduler.shutdown();
-                } else if (new Date().getTime() - lastDraw > 800) {
-                    lastDraw = new Date().getTime();
+                } else if (new Date().getTime() - lastMove > 800) {
+                    lastMove = new Date().getTime();
                     JLabel field = moveFieldMap.get(orderedMoves.remove());
                     field.setIcon(null);
                     field.setForeground(Color.black);
@@ -136,7 +146,13 @@ class BoardPane extends JPanel {
                     if (orderedMoves.size() > 0) {
                         setIcon(moveFieldMap.get(orderedMoves.peek()), knightIcon);
                     }
-                    field.invalidate();
+                }
+            }
+
+            @Override
+            protected void done() {
+                if (playing.get() > 0) {
+                    playing.decrementAndGet();
                 }
             }
         }.execute();
@@ -144,19 +160,20 @@ class BoardPane extends JPanel {
 
     private ImageIcon loadIcon(String name) {
         try (var fileStream = getClass().getResourceAsStream(name)) {
-           if (fileStream != null) {
-               return new ImageIcon(fileStream.readAllBytes());
-           } else {
-               throw new RuntimeException("Missing icon: " + name);
-           }
+            if (fileStream != null) {
+                return new ImageIcon(fileStream.readAllBytes());
+            } else {
+                throw new RuntimeException("Missing icon: " + name);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void setIcon(JLabel label, ImageIcon icon) {
+        int width = label.getWidth() > 0 ? label.getWidth() : 600 / model.getBoardSize().dim().x();
+        int height = label.getHeight() > 0 ? label.getHeight() : 600 / model.getBoardSize().dim().y();
         label.setIcon(new ImageIcon(icon.getImage().getScaledInstance(
-                label.getWidth() - 4, label.getHeight() - 4, Image.SCALE_DEFAULT)));
-        label.invalidate();
+                width - 4, height - 4, Image.SCALE_DEFAULT)));
     }
 }

@@ -7,23 +7,25 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
+ * Multithread Backtracking Algorithmus für Springerproblem
+ *
  * @author matthias.baumgartner@gmx.net
  */
 public class Engine {
     public static final int DEFAULT_THREAD_COUNT = 4;
 
-    private final AtomicInteger solutions = new AtomicInteger(0);
-    private final AtomicLong moveCounter = new AtomicLong(0);
-    private final BlockingQueue<Board> buffer = new ArrayBlockingQueue<>(256); // solution  buffer
+    private final AtomicInteger solutionCount = new AtomicInteger(0);
+    private final AtomicLong moveCount = new AtomicLong(0);
+    private final BlockingQueue<Board> solutionBuffer = new ArrayBlockingQueue<>(256);
     private final AtomicInteger errors = new AtomicInteger(0);
 
-    private final Board board;
-    private final int threadCount;
-    private final int threshold;
+    private final Board board;  // Spielfeld
+    private final int threadCount;  // Grösse des Threadpools
+    private final int threadThreshold;  // Zugtiefe ab welcher parallelisiert wird
 
-    private Semaphore concurrent;
-    private ExecutorService executor;
-    private boolean stop;
+    private Semaphore concurrent;  // Semaphore limitiert gleichzeitige Threads
+    private ExecutorService executor;   // Threadpool
+    private boolean stop;   // Anforderung zum Stop der Lösungssuche
 
     public Engine(Dim size) {
         this(size, DEFAULT_THREAD_COUNT, new Dim[]{});
@@ -36,23 +38,24 @@ public class Engine {
     public Engine(Dim size, int threadCount, Dim... blacks) {
         this.board = new Board(size, blacks);
         this.threadCount = threadCount;
-        this.threshold = threshold(board);
+        this.threadThreshold = threshold(board);
     }
 
     public Engine(Board board, int threadCount) {
         this.board = board;
         this.threadCount = threadCount;
-        this.threshold = threshold(board);
+        this.threadThreshold = threshold(board);
     }
 
     public static void main(String[] args) {
         Engine engine = new Engine(new Dim(5, 5), DEFAULT_THREAD_COUNT);
         Formatter formatter = new Formatter();
         long result = engine.solve(1, 1).map(formatter::format).peek(System.out::println).count();
-        System.out.printf("Lösungen: %d, Züge: %d%n", result, engine.moveCounter.get());
+        System.out.printf("Lösungen: %d, Züge: %d%n", result, engine.moveCount.get());
     }
 
     /**
+     *  Hauptroutine für Multithread Backtracking
      *
      */
     public Stream<Board> solve(int x, int y) {
@@ -72,16 +75,17 @@ public class Engine {
             }
         });
         mainThread.start();
+        // Solutions aus Buffer lesen und und als Rückgabewert streamen
         try {
             UnaryOperator<Board> take = b -> {
                 try {
-                    return buffer.take();
+                    return solutionBuffer.take();
                 } catch (InterruptedException e) {
                     errors.incrementAndGet();
                     throw new RuntimeException(e);
                 }
             };
-            return Stream.iterate(buffer.take(), b -> b != Board.SENTINEL, take).filter(b -> b != Board.SENTINEL);
+            return Stream.iterate(solutionBuffer.take(), b -> b != Board.SENTINEL, take).filter(b -> b != Board.SENTINEL);
         } catch (InterruptedException e) {
             errors.incrementAndGet();
             throw new RuntimeException(e);
@@ -101,7 +105,7 @@ public class Engine {
                 if (board.isSolved()) {
                     solution(new Board(board));
                 } else {
-                    if (board.step == threshold) {
+                    if (board.step == threadThreshold) {
                         lock();
                         final Board subBoard = new Board(board);
                         executor.submit(() -> {
@@ -118,11 +122,11 @@ public class Engine {
     }
 
     public int solutions() {
-        return solutions.get();
+        return solutionCount.get();
     }
 
     public long moves() {
-        return moveCounter.get();
+        return moveCount.get();
     }
 
     public int errors() {
@@ -141,16 +145,18 @@ public class Engine {
         try {
             if (board != Board.SENTINEL) {
                 board = new Board(board);
-                solutions.incrementAndGet();
+                solutionCount.incrementAndGet();
             }
-            buffer.put(board);
+            if (!solutionBuffer.offer(board, 1, TimeUnit.SECONDS)) {
+                stop();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void step() {
-        moveCounter.incrementAndGet();
+        moveCount.incrementAndGet();
     }
 
     private void lock() {

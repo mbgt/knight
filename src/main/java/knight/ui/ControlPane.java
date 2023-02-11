@@ -1,31 +1,25 @@
 package knight.ui;
 
+import knight.model.Board;
 import knight.ui.Model.BoardSize;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AdjustmentEvent;
 
 import static knight.ui.Model.Mode.*;
 
 class ControlPane extends JPanel {
-
-    interface Events {
-        void onStart();
-
-        void onStop();
-
-        void onShow();
-    }
-
     private final Model model;
-    private final Events events;
+    private final Listener listener;
 
     private JScrollBar solutionScrollbar;
 
-    ControlPane(Model model, Events events) {
+
+    ControlPane(Model model, Listener listener) {
         super(new CardLayout(2, 2));
         this.model = model;
-        this.events = events;
+        this.listener = listener;
         add(SET.name(), settingsCard());
         add(RUN.name(), runningCard());
         add(VIEW.name(), navigationCard());
@@ -39,7 +33,7 @@ class ControlPane extends JPanel {
                 new Dimension(320, 24), new Dimension(1920, 24)));
         // Stop Button
         JButton stopButton = new JButton("Stop");
-        stopButton.addActionListener(action -> events.onStop());
+        stopButton.addActionListener(action -> listener.onStop());
         stopButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         running.add(stopButton);
         return running;
@@ -56,7 +50,7 @@ class ControlPane extends JPanel {
         settings.add(sizeCombo);
         // Start Button
         JButton startButton = new JButton("Start");
-        startButton.addActionListener(action -> events.onStart());
+        startButton.addActionListener(action -> listener.onStart());
         startButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         settings.add(startButton);
         return settings;
@@ -66,10 +60,11 @@ class ControlPane extends JPanel {
         JPanel navigation = new JPanel();
         navigation.setLayout(new BoxLayout(navigation, BoxLayout.X_AXIS));
         JButton showButton = new JButton("Show");
-        showButton.addActionListener(action -> events.onShow());
+        showButton.addActionListener(action -> listener.onShow());
         navigation.add(showButton);
         solutionScrollbar = new JScrollBar(Adjustable.HORIZONTAL);
-        solutionScrollbar.setPreferredSize(new Dimension(320, 24));
+        solutionScrollbar.setPreferredSize(new Dimension(320, 25));
+        solutionScrollbar.addAdjustmentListener(this::adjustBoard);
         navigation.add(solutionScrollbar);
         // Reset Button
         JButton resetButton = new JButton("Reset");
@@ -79,11 +74,20 @@ class ControlPane extends JPanel {
         return navigation;
     }
 
+    private void adjustBoard(AdjustmentEvent adjustment) {
+        Board board = model.getBoards().get(adjustment.getValue());
+        model.setBoard(board);
+    }
+
     private void mode(Model.Mode mode) {
         CardLayout layout = (CardLayout) getLayout();
         layout.show(this, mode.name());
         if (mode == VIEW && model.getBoards().size() > 0) {
-            solutionScrollbar.setModel(new DefaultBoundedRangeModel(0, 10, 0, model.getBoards().size()));
+            solutionScrollbar.setEnabled(true);
+            solutionScrollbar.setModel(new DefaultBoundedRangeModel(0, 1, 0, model.getBoards().size()));
+        } else {
+            solutionScrollbar.setEnabled(false);
+            solutionScrollbar.setModel(new DefaultBoundedRangeModel(0, 0, 0, 0));
         }
     }
 }

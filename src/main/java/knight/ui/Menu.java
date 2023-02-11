@@ -1,72 +1,64 @@
 package knight.ui;
 
 import knight.model.Engine;
-import knight.ui.Model.BoardSize;
 
 import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.awt.Event.CTRL_MASK;
+import static knight.ui.Model.Mode.RUN;
+import static knight.ui.Model.Mode.VIEW;
 
 public class Menu extends JMenuBar {
-    interface MenuActions {
-        void onReset();
-
-        void onStartStop();
-
-        void onShow();
-
-        void onQuit();
-    }
 
     private static final int[] THREAD_COUNT = {1, 2, 4, 8, 12, 16};
 
-    private Model model;
-    private MenuActions actions;
+    private final Model model;
+    private final Listener listener;
 
-    private Map<Integer, JRadioButtonMenuItem> threadMenuItemMap = new HashMap<>();
-    private Map<BoardSize, JRadioButtonMenuItem> sizeMenuItemMap = new HashMap<>();
+    private final Map<Integer, JRadioButtonMenuItem> threadMenuItemMap = new HashMap<>();
 
-    public Menu(Model model, MenuActions actions) {
+    private JMenuItem startStopItem;
+    private JMenuItem showItem;
+
+    public Menu(Model model, Listener listener) {
         this.model = model;
-        this.actions = actions;
+        this.listener = listener;
+        model.addModeListener(this::menuState);
         createMenu();
+    }
+
+    private void menuState(Model.Mode mode) {
+        startStopItem.setEnabled(mode != VIEW);
+        showItem.setEnabled(mode == VIEW);
     }
 
     private void createMenu() {
         // Menu "Knight"
         JMenu knightMenu = new JMenu("Knight");
-        knightMenu.add(knightItem("Reset", actions::onReset, 'r'));
-        knightMenu.add(knightItem("Start/Stop", actions::onStartStop, 't'));
-        knightMenu.add(knightItem("Show", actions::onShow, 'h'));
+        knightMenu.add(knightItem("Reset", listener::onReset));
+        startStopItem = knightItem("Start/Stop", () -> {
+            if ( model.getMode() == RUN) {
+                listener.onStop();
+            } else {
+                listener.onStart();
+            }
+        });
+        knightMenu.add(startStopItem);
+        showItem = knightItem("Show", listener::onShow);
+        showItem.setEnabled(false);
+        knightMenu.add(showItem);
         knightMenu.addSeparator();
-        knightMenu.add(knightItem("Quit", actions::onQuit, 'q'));
+        knightMenu.add(knightItem("Quit", listener::onQuit));
         add(knightMenu);
         // Menu "Thread"
         add(threadMenu());
     }
 
-    private JMenuItem knightItem(String title, Runnable action, char key) {
+    private JMenuItem knightItem(String title, Runnable action) {
         JMenuItem menuItem = new JMenuItem(title);
         menuItem.addActionListener(a -> action.run());
-        menuItem.setAccelerator(KeyStroke.getKeyStroke(Character.valueOf(key), CTRL_MASK));
         return menuItem;
-    }
-
-    private JMenu boardMenu() {
-        JMenu boardMenu = new JMenu("Matrix");
-        for (BoardSize boardSize : BoardSize.values()) {
-            JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(boardSize.toString());
-            menuItem.setSelected(boardSize == model.getBoardSize());
-            menuItem.addActionListener(a -> {
-                sizeMenuItemMap.get(model.getBoardSize()).setSelected(false);
-                model.setBoardSize(boardSize);
-            });
-            sizeMenuItemMap.put(boardSize, menuItem);
-            boardMenu.add(menuItem);
-        }
-        return boardMenu;
     }
 
     private JMenu threadMenu() {

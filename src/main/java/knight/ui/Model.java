@@ -18,7 +18,7 @@ public class Model {
         SIZE_6x5(new Dim(6, 5)),
         SIZE_6x6(new Dim(6, 6)),
         SIZE_7x5(new Dim(7, 5)),
-        SIZE_7x6(new Dim(6, 4));
+        SIZE_7x6(new Dim(7, 6));
         private final Dim size;
 
         BoardSize(Dim size) {
@@ -40,6 +40,8 @@ public class Model {
     private List<Board> boards = Collections.emptyList();
     private Board board = new Board(BoardSize.SIZE_5x5.size);
     private Dim startPosition = new Dim(0,0);
+    private long moves;
+    private int solutions;
 
     private int threadCount = Engine.DEFAULT_THREAD_COUNT;
 
@@ -54,6 +56,8 @@ public class Model {
     public void setMode(Mode mode) {
         this.mode = mode;
         if (mode == Mode.SET) {
+            moves = 0;
+            solutions = 0;
             setBoard(new Board(getBoardSize().dim()));
         }
         modeListener.forEach(listener -> listener.accept(mode));
@@ -95,6 +99,24 @@ public class Model {
     public void setBoards(List<Board> boards) {
         this.boards = boards;
     }
+
+
+    public long getMoves() {
+        return moves;
+    }
+
+    public void setMoves(long moves) {
+        this.moves = moves;
+    }
+
+    public int getSolutions() {
+        return solutions;
+    }
+
+    public void setSolutions(int solutions) {
+        this.solutions = solutions;
+    }
+
 
     public int getThreadCount() {
         return threadCount;

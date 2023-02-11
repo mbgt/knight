@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 
 /**
- * Spielfeld mit variabeler Grösse size {@link Dim} und aktueller Position x,y des Springers für Springerproblem
+ * Spielfeld mit variabeler Grösse {@link Dim} und aktueller Position des Springers
  *
  * @author matthias.baumgartner@gmx.net
  */
@@ -17,11 +17,11 @@ public class Board {
 
     static final Board SENTINEL = new Board(new Dim(0, 0));
 
-    final int[][] board;
+    final int[][] board;    // 0 = frei, -1, gesperrt, 1-n Zug des Springers
     final Dim size;
-    int blacks;
-    int x, y;
-    int step;
+    int blacks;     // Anzahl
+    int x, y;   // aktuelle Position
+    int step;   // Spielzug
 
     Board(Board copy) {
         this.size = copy.size;
@@ -49,10 +49,10 @@ public class Board {
         }
     }
 
-    public int[][] getMoves() {
-        return board;
-    }
 
+    /**
+     * Toggle zwischen gesperrtem und freiem Spielfeld
+     */
     public void toggleBlack(int x, int y) {
         if (board[x][y] != -1) {
             board[x][y] = -1;
@@ -64,7 +64,7 @@ public class Board {
     }
 
     /**
-     * Springt vom aktuellen Feld auf Feld mit Vektor (x,y)
+     * Zug vom aktuellen Feld auf Feld mit Vektor (x,y)
      */
     void move(Dim move) {
         this.x += move.x();
@@ -92,6 +92,9 @@ public class Board {
         return false;
     }
 
+    public int[][] getMoves() {
+        return board;
+    }
     boolean isSolved() {
         return step + blacks == size.area();
     }
