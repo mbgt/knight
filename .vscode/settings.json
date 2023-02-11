@@ -4,5 +4,6 @@
             "command": "clean install",
             "debug": false
         }
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
