@@ -31,7 +31,7 @@ public class StatusPane extends JPanel {
                 if (new Date().getTime() - statusUpdateTicks > 100) {
                     statusUpdateTicks = new Date().getTime();
                     setStatus(model.getMoves(), model.getSolutions());
-                    setInfo(String.format("Zeit (ms): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
+                    setInfo(String.format("Zeit (s): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
                 }
             }
             case VIEW -> {
@@ -57,7 +57,7 @@ public class StatusPane extends JPanel {
             }
             case VIEW -> {
                 setStatus(model.getMoves(), model.getSolutions());
-                setInfo(String.format("Zeit (ms): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
+                setInfo(String.format("Zeit (s): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
             }
         }
     }

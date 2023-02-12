@@ -27,7 +27,7 @@ public class Main {
     }
 
     private void createFrame() {
-        JFrame frame = new JFrame("Knights");
+        JFrame frame = new JFrame("Knightstour");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(640, 640));
         frame.setMinimumSize(new Dimension(360, 360));
