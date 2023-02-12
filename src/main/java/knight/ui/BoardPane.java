@@ -33,8 +33,7 @@ class BoardPane extends JPanel {
 
     private final Map<Integer, JLabel> moveFieldMap = new HashMap<>();
     private final AtomicInteger playing = new AtomicInteger(0);
-
-    private long lastUpdateTicks = new Date().getTime();
+    private long lastUpdatedTicks = new Date().getTime();
 
     public BoardPane(Model model) {
         this.model = model;
@@ -42,8 +41,8 @@ class BoardPane extends JPanel {
         this.crossIcon = loadIcon("/cross.png");
         model.addSizeListener(this::resize);
         model.addBoardListener(board -> {
-            if (model.getMode() != RUN || new Date().getTime() - lastUpdateTicks > 500) {
-                lastUpdateTicks = new Date().getTime();
+            if (model.getMode() != RUN || new Date().getTime() - lastUpdatedTicks > 500) {
+                lastUpdatedTicks = new Date().getTime();
                 playing.set(0);
                 draw(board);
             }
