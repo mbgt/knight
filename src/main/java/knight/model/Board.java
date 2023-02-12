@@ -22,6 +22,7 @@ public class Board {
     int blacks;     // Anzahl
     int x, y;   // aktuelle Position
     int step;   // Spielzug
+    long count; // Gesamtzahl Züge auf diesem Brett
 
     Board(Board copy) {
         this.size = copy.size;
@@ -70,6 +71,7 @@ public class Board {
         this.x += move.x();
         this.y += move.y();
         this.board[this.x][this.y] = ++step;
+        this.count++;
     }
 
     /**
@@ -92,6 +94,9 @@ public class Board {
         return false;
     }
 
+    public long getCount() {
+        return count;
+    }
     public int[][] getMoves() {
         return board;
     }

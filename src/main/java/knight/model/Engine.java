@@ -64,6 +64,7 @@ public class Engine {
         Thread mainThread = new Thread(() -> {
             board.move(new Dim(x, y));  // Startposition
             solve(board);
+            count(board.getCount());
             executor.shutdown();
             try {
                 executor.awaitTermination(1, TimeUnit.MINUTES);
@@ -101,7 +102,7 @@ public class Engine {
         for (Dim move : Board.MOVES) {
             if (board.check(move)) {
                 board.move(move);
-                step();
+                // step();
                 if (board.isSolved()) {
                     solution(new Board(board));
                 } else {
@@ -110,6 +111,7 @@ public class Engine {
                         final Board subBoard = new Board(board);
                         executor.submit(() -> {
                             solve(subBoard);
+                            count(subBoard.getCount());
                             unlock();
                         });
                     } else {
@@ -126,7 +128,7 @@ public class Engine {
     }
 
     public long moves() {
-        return moveCount.get();
+        return moveCount.getOpaque();
     }
 
     public int errors() {
@@ -155,8 +157,8 @@ public class Engine {
         }
     }
 
-    private void step() {
-        moveCount.incrementAndGet();
+    private void count(long moves) {
+        moveCount.getAndAdd(moves);
     }
 
     private void lock() {
