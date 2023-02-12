@@ -18,6 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static knight.ui.Model.Mode.RUN;
 import static knight.ui.Model.Mode.SET;
 
 class BoardPane extends JPanel {
@@ -33,6 +34,7 @@ class BoardPane extends JPanel {
     private final Map<Integer, JLabel> moveFieldMap = new HashMap<>();
     private final AtomicInteger playing = new AtomicInteger(0);
 
+    private long lastUpdateTicks = new Date().getTime();
 
     public BoardPane(Model model) {
         this.model = model;
@@ -40,8 +42,11 @@ class BoardPane extends JPanel {
         this.crossIcon = loadIcon("/cross.png");
         model.addSizeListener(this::resize);
         model.addBoardListener(board -> {
-            playing.set(0);
-            draw(board);
+            if (model.getMode() != RUN || new Date().getTime() - lastUpdateTicks > 500) {
+                lastUpdateTicks = new Date().getTime();
+                playing.set(0);
+                draw(board);
+            }
         });
         model.addModeListener(mode -> playing.set(0)); // trigger animation executors shutdown
         resize(model.getBoardSize());
