@@ -95,17 +95,23 @@ public class Main {
         new SwingWorker<List<Board>, Board>() {
             @Override
             protected List<Board> doInBackground() {
-                engine = new Engine(model.getBoard(), model.getThreadCount());
-                List<Board> boards = engine.solve(model.getStartPosition().x(), model.getStartPosition().y()) //
-                        .peek(this::publish)
-                        .limit(1000000)
-                        .collect(toList());
-                model.setBoards(boards);
-                model.setMode(VIEW);
-                synchronized (RUN) {
-                    RUN.notifyAll();
+                try {
+                    engine = new Engine(model.getBoard(), model.getThreadCount());
+                    List<Board> boards = engine.solve(model.getStartPosition().x(), model.getStartPosition().y()) //
+                            .peek(this::publish)
+                            .limit(1_000_000)
+                            .collect(toList());
+                    model.setBoards(boards);
+                    model.setMode(VIEW);
+                    return boards;
+                } catch (Exception ex) {
+                    model.setMode(SET);
+                    throw ex;
+                } finally {
+                    synchronized (RUN) {
+                        RUN.notifyAll();
+                    }
                 }
-                return boards;
             }
 
             @Override
