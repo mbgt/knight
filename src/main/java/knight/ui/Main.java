@@ -7,7 +7,6 @@ import knight.model.Engine;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static knight.ui.Model.Mode.*;
@@ -19,8 +18,6 @@ public class Main {
     private final Model model = new Model();
 
     private Engine engine;
-
-    private Optional<Model.Mode> nextMode = Optional.empty();
 
     public Main() {
         createFrame();
@@ -53,11 +50,8 @@ public class Main {
         return new Listener() {
             @Override
             public void onReset() {
-                if (model.getMode() == RUN) {
-                    stop(SET);
-                } else {
-                    model.setMode(SET);
-                }
+                stop();
+                model.setMode(SET);
             }
 
             @Override
@@ -68,7 +62,7 @@ public class Main {
 
             @Override
             public void onStop() {
-                stop(VIEW);
+                stop();
             }
 
             @Override
@@ -108,6 +102,10 @@ public class Main {
                         .limit(1000000)
                         .collect(toList());
                 model.setBoards(boards);
+                model.setMode(VIEW);
+                synchronized (RUN) {
+                    RUN.notifyAll();
+                }
                 return boards;
             }
 
@@ -117,27 +115,18 @@ public class Main {
                 model.setSolutions(engine.solutions());
                 model.setBoard(boards.get(0));
             }
-
-            @Override
-            protected void done() {
-                synchronized (nextMode) {
-                    if (nextMode.isEmpty() || nextMode.get() == VIEW) {
-                        model.setMode(VIEW);
-                    } else {
-                        model.setMode(SET);
-                    }
-                    engine = null;
-                    nextMode = Optional.empty();
-                }
-            }
         }.execute();
     }
 
-    private void stop(Model.Mode mode) {
-        synchronized (nextMode) {
-            if (engine != null) {
-                nextMode = Optional.of(mode);
+    private void stop() {
+        synchronized (RUN) {
+            if (model.getMode() == RUN) {
                 engine.stop();
+                try {
+                    RUN.wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
