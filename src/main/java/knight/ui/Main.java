@@ -102,7 +102,6 @@ public class Main {
                             .limit(1_000_000)
                             .collect(toList());
                     model.setBoards(boards);
-                    model.setMode(VIEW);
                     return boards;
                 } catch (Exception ex) {
                     model.setMode(SET);
@@ -119,6 +118,15 @@ public class Main {
                 model.setMoves(engine.moves());
                 model.setSolutions(engine.solutions());
                 model.setBoard(boards.get(0));
+            }
+
+            @Override
+            protected void done() {
+                synchronized (RUN) {
+                    if (model.getMode() == RUN) {
+                        model.setMode(VIEW);
+                    }
+                }
             }
         }.execute();
     }
