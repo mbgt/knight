@@ -51,7 +51,9 @@ public class Main {
             @Override
             public void onReset() {
                 stop();
-                model.setMode(SET);
+                synchronized (SET) {
+                    model.setMode(SET);
+                }
             }
 
             @Override
@@ -115,9 +117,13 @@ public class Main {
 
             @Override
             protected void process(List<Board> boards) {
-                model.setMoves(engine.moves());
-                model.setSolutions(engine.solutions());
-                model.setBoard(boards.get(0));
+                synchronized (SET) {
+                    if (model.getMode() == RUN) {
+                        model.setMoves(engine.moves());
+                        model.setSolutions(engine.solutions());
+                        model.setBoard(boards.get(0));
+                    }
+                }
             }
 
             @Override
