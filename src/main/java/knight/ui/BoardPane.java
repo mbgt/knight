@@ -18,6 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.singleton;
 import static knight.ui.Model.Mode.RUN;
 import static knight.ui.Model.Mode.SET;
 
@@ -33,7 +34,7 @@ class BoardPane extends JPanel {
 
     private final Map<Integer, JLabel> moveFieldMap = new HashMap<>();
     private final AtomicInteger playing = new AtomicInteger(0);
-    private long lastUpdatedTicks = new Date().getTime();
+    private long lastUpdatedTicks = System.currentTimeMillis();
 
     public BoardPane(Model model) {
         this.model = model;
@@ -41,8 +42,8 @@ class BoardPane extends JPanel {
         this.crossIcon = loadIcon("/cross.png");
         model.addSizeListener(this::resize);
         model.addBoardListener(board -> {
-            if (model.getMode() != RUN || new Date().getTime() - lastUpdatedTicks > 500) {
-                lastUpdatedTicks = new Date().getTime();
+            if (model.getMode() != RUN || System.currentTimeMillis() - lastUpdatedTicks > 500) {
+                lastUpdatedTicks = System.currentTimeMillis();
                 playing.set(0);
                 draw(board);
             }
@@ -106,8 +107,20 @@ class BoardPane extends JPanel {
                     Dim position = new Dim(fieldIndex % model.getBoardSize().dim().x(),
                             fieldIndex / model.getBoardSize().dim().x());
                     Board board = model.getBoard();
-                    if (e.isControlDown()) {
-                        model.getBoard().toggleBlack(position.x(), position.y());
+                    Set<Dim> toggles = new HashSet<>(singleton(position));
+                    if (e.getButton() == MouseEvent.BUTTON3) {
+                        if (e.isControlDown() && e.isShiftDown()) {
+                            toggles.add(position.mirrorBoth(model.getBoardSize().dim()));
+                        }
+                        if (e.isControlDown()) {
+                            toggles.add(position.mirrorVertical(model.getBoardSize().dim().y()));
+                        }
+                        if (e.isShiftDown()) {
+                            toggles.add(position.mirrorHoizontal(model.getBoardSize().dim().x()));
+                        }
+                        for (Dim pos: toggles) {
+                            model.getBoard().toggleBlack(pos.x(), pos.y());
+                        }
                     } else {
                         model.setStartPosition(position);
                     }
@@ -125,7 +138,7 @@ class BoardPane extends JPanel {
             private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
             private final LinkedList<Integer> orderedMoves = moveFieldMap.keySet().stream()
                     .sorted().collect(LinkedList::new, LinkedList::add, LinkedList::addAll);
-            private long lastMove = new Date().getTime();
+            private long lastMove = System.currentTimeMillis();
             private final CountDownLatch waitForCompletion = new CountDownLatch(1);
 
             @Override
@@ -141,8 +154,8 @@ class BoardPane extends JPanel {
                 if (orderedMoves.isEmpty() || playing.get() == 0) {
                     waitForCompletion.countDown();
                     scheduler.shutdown();
-                } else if (new Date().getTime() - lastMove > 800) {
-                    lastMove = new Date().getTime();
+                } else if (System.currentTimeMillis() - lastMove > 800) {
+                    lastMove = System.currentTimeMillis();
                     JLabel field = moveFieldMap.get(orderedMoves.remove());
                     field.setIcon(null);
                     field.setForeground(Color.black);

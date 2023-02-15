@@ -5,7 +5,6 @@ import knight.ui.Model.Mode;
 
 import javax.swing.*;
 import java.text.NumberFormat;
-import java.util.Date;
 import java.util.stream.IntStream;
 
 public class StatusPane extends JPanel {
@@ -14,7 +13,7 @@ public class StatusPane extends JPanel {
     private JTextField leftField;
     private JTextField rightField;
 
-    private long statusUpdateTicks = new Date().getTime();
+    private long statusUpdateTicks = System.currentTimeMillis();
     private long startTicks;
 
     StatusPane(Model model) {
@@ -28,10 +27,10 @@ public class StatusPane extends JPanel {
     private void board(Board board) {
         switch (model.getMode()) {
             case RUN -> {
-                if (new Date().getTime() - statusUpdateTicks > 100) {
-                    statusUpdateTicks = new Date().getTime();
+                if (System.currentTimeMillis() - statusUpdateTicks > 100) {
+                    statusUpdateTicks = System.currentTimeMillis();
                     setStatus(model.getMoves(), model.getSolutions());
-                    setInfo(String.format("Zeit (s): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
+                    setInfo(String.format("Zeit (s): %8.3f", 0.001f * (System.currentTimeMillis() - startTicks)));
                 }
             }
             case VIEW -> {
@@ -51,13 +50,13 @@ public class StatusPane extends JPanel {
                 rightField.setText("");
             }
             case RUN -> {
-                startTicks = new Date().getTime();
+                startTicks = System.currentTimeMillis();
                 setStatus(0, 0);
-                setInfo(String.format("Zeit (ms): %8.3f", 0.0f));
+                setInfo(String.format("Zeit (s): %8.3f", 0.0f));
             }
             case VIEW -> {
                 setStatus(model.getMoves(), model.getSolutions());
-                setInfo(String.format("Zeit (s): %8.3f", 0.001f * (new Date().getTime() - startTicks)));
+                setInfo(String.format("Zeit (s): %8.3f", 0.001f * (System.currentTimeMillis() - startTicks)));
             }
         }
     }
