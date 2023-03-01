@@ -4,6 +4,8 @@ import knight.model.Board;
 import knight.ui.Model.Mode;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import java.awt.*;
 import java.text.NumberFormat;
 import java.util.stream.IntStream;
 
@@ -21,6 +23,7 @@ public class StatusPane extends JPanel {
         model.addModeListener(this::mode);
         model.addBoardListener(this::board);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        setBorder(BorderFactory.createEtchedBorder());
         createFields();
     }
 
@@ -72,15 +75,19 @@ public class StatusPane extends JPanel {
     }
 
     private void createFields() {
+        Font font = new Font("Verdana", Font.BOLD, 14);
+        Border emptyBorder = BorderFactory.createEmptyBorder(2,2,2,2);
         leftField = new JTextField();
         leftField.setEditable(false);
-        leftField.setBorder(BorderFactory.createEmptyBorder());
+        leftField.setBorder(emptyBorder);
+        leftField.setFont(font);
         add(leftField);
 
         rightField = new JTextField();
         rightField.setEditable(false);
         rightField.setHorizontalAlignment(JTextField.RIGHT);
-        rightField.setBorder(BorderFactory.createEmptyBorder());
+        rightField.setBorder(emptyBorder);
+        rightField.setFont(font);
         add(rightField);
     }
 }
