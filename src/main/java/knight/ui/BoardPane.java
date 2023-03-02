@@ -23,9 +23,7 @@ import static knight.ui.Model.Mode.RUN;
 import static knight.ui.Model.Mode.SET;
 
 class BoardPane extends JPanel {
-    private static final String TEMPLATE = """
-            <html><body><div style="font-size:24">$num</div></body></html>
-            """;
+    private static final Font FONT = new Font("Verdana", Font.BOLD, 24);
 
     private final Model model;
 
@@ -69,7 +67,7 @@ class BoardPane extends JPanel {
                     field.setText("");
                 } else {
                     field.setIcon(null);
-                    field.setText(TEMPLATE.replace("$num", String.format("%2d", move)));
+                    field.setText(Integer.toString(move));
                     moveFieldMap.put(move, field);
                 }
             }
@@ -91,6 +89,7 @@ class BoardPane extends JPanel {
                 label.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
                 label.addMouseListener(onClickField());
                 label.setHorizontalAlignment(JLabel.CENTER);
+                label.setFont(FONT);
                 add(label);
             }
         }
@@ -156,9 +155,11 @@ class BoardPane extends JPanel {
                     scheduler.shutdown();
                 } else if (System.currentTimeMillis() - lastMove > 800) {
                     lastMove = System.currentTimeMillis();
-                    JLabel field = moveFieldMap.get(orderedMoves.remove());
+                    Integer move = orderedMoves.remove();
+                    JLabel field = moveFieldMap.get(move);
                     field.setIcon(null);
                     field.setForeground(Color.black);
+                    field.setText(move.toString());
                     // Springer auf nächstes Feld schieben
                     if (orderedMoves.size() > 0) {
                         setIcon(moveFieldMap.get(orderedMoves.peek()), knightIcon);
@@ -192,5 +193,6 @@ class BoardPane extends JPanel {
         int height = label.getHeight() > 0 ? label.getHeight() : 600 / model.getBoardSize().dim().y();
         label.setIcon(new ImageIcon(icon.getImage().getScaledInstance(
                 width - 4, height - 4, Image.SCALE_DEFAULT)));
+        label.setText("");
     }
 }
