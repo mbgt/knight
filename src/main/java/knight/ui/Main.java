@@ -46,8 +46,8 @@ public class Main {
         return content;
     }
 
-    private Listener listener() {
-        return new Listener() {
+    private ActionListener listener() {
+        return new ActionListener() {
             @Override
             public void onReset() {
                 stop();
@@ -150,6 +150,7 @@ public class Main {
         }
     }
 
+
     private void start(String[] args) {
         int size_x, size_y, x = 0, y = 0;
         if (args.length > 0) {
@@ -165,8 +166,7 @@ public class Main {
             }
             Engine engine = new Engine(new Dim(size_x, size_y));
             run(engine, x, y);
-        }  //  animate(MODEL);
-
+        }
     }
 
     public static void main(String[] args) {

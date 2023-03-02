@@ -14,16 +14,16 @@ public class Menu extends JMenuBar {
     private static final int[] THREAD_COUNT = {1, 2, 4, 8, 12, 16};
 
     private final Model model;
-    private final Listener listener;
+    private final ActionListener actionListener;
 
     private final Map<Integer, JRadioButtonMenuItem> threadMenuItemMap = new HashMap<>();
 
     private JMenuItem startStopItem;
     private JMenuItem showItem;
 
-    public Menu(Model model, Listener listener) {
+    public Menu(Model model, ActionListener actionListener) {
         this.model = model;
-        this.listener = listener;
+        this.actionListener = actionListener;
         model.addModeListener(this::menuState);
         createMenu();
     }
@@ -36,20 +36,20 @@ public class Menu extends JMenuBar {
     private void createMenu() {
         // Menu "Knight"
         JMenu knightMenu = new JMenu("Knight");
-        knightMenu.add(knightItem("Reset", listener::onReset));
+        knightMenu.add(knightItem("Reset", actionListener::onReset));
         startStopItem = knightItem("Start/Stop", () -> {
             if ( model.getMode() == RUN) {
-                listener.onStop();
+                actionListener.onStop();
             } else {
-                listener.onStart();
+                actionListener.onStart();
             }
         });
         knightMenu.add(startStopItem);
-        showItem = knightItem("Show", listener::onShow);
+        showItem = knightItem("Show", actionListener::onShow);
         showItem.setEnabled(false);
         knightMenu.add(showItem);
         knightMenu.addSeparator();
-        knightMenu.add(knightItem("Quit", listener::onQuit));
+        knightMenu.add(knightItem("Quit", actionListener::onQuit));
         add(knightMenu);
         // Menu "Thread"
         add(threadMenu());

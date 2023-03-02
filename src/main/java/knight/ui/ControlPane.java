@@ -11,15 +11,15 @@ import static knight.ui.Model.Mode.*;
 
 class ControlPane extends JPanel {
     private final Model model;
-    private final Listener listener;
+    private final ActionListener actionListener;
 
     private JScrollBar solutionScrollbar;
 
 
-    ControlPane(Model model, Listener listener) {
+    ControlPane(Model model, ActionListener actionListener) {
         super(new CardLayout(2, 2));
         this.model = model;
-        this.listener = listener;
+        this.actionListener = actionListener;
         add(SET.name(), settingsCard());
         add(RUN.name(), runningCard());
         add(VIEW.name(), navigationCard());
@@ -33,7 +33,7 @@ class ControlPane extends JPanel {
                 new Dimension(320, 24), new Dimension(1920, 24)));
         // Stop Button
         JButton stopButton = new JButton("Stop");
-        stopButton.addActionListener(action -> listener.onStop());
+        stopButton.addActionListener(action -> actionListener.onStop());
         stopButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         running.add(stopButton);
         return running;
@@ -50,7 +50,7 @@ class ControlPane extends JPanel {
         settings.add(sizeCombo);
         // Start Button
         JButton startButton = new JButton("Start");
-        startButton.addActionListener(action -> listener.onStart());
+        startButton.addActionListener(action -> actionListener.onStart());
         startButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         settings.add(startButton);
         return settings;
@@ -60,7 +60,7 @@ class ControlPane extends JPanel {
         JPanel navigation = new JPanel();
         navigation.setLayout(new BoxLayout(navigation, BoxLayout.X_AXIS));
         JButton showButton = new JButton("Show");
-        showButton.addActionListener(action -> listener.onShow());
+        showButton.addActionListener(action -> actionListener.onShow());
         navigation.add(showButton);
         solutionScrollbar = new JScrollBar(Adjustable.HORIZONTAL);
         solutionScrollbar.setPreferredSize(new Dimension(320, 25));

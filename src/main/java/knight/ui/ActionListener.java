@@ -1,6 +1,6 @@
 package knight.ui;
 
-interface Listener {
+interface ActionListener {
     void onReset();
     void onStart();
     void onStop();

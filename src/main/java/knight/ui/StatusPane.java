@@ -41,8 +41,6 @@ public class StatusPane extends JPanel {
                         .filter(i -> model.getBoards().get(i) == board).findFirst().orElse(0);
                 rightField.setText(String.format("%d / %d", index + 1, model.getBoards().size()));
             }
-            default -> {
-            }
         }
     }
 
@@ -76,17 +74,17 @@ public class StatusPane extends JPanel {
 
     private void createFields() {
         Font font = new Font("Verdana", Font.BOLD, 14);
-        Border emptyBorder = BorderFactory.createEmptyBorder(2,2,2,2);
+        Border emptyBorder = BorderFactory.createEmptyBorder(3, 3, 3, 3);
         leftField = new JTextField();
-        leftField.setEditable(false);
         leftField.setBorder(emptyBorder);
+        leftField.setEditable(false);
         leftField.setFont(font);
         add(leftField);
 
         rightField = new JTextField();
+        rightField.setBorder(emptyBorder);
         rightField.setEditable(false);
         rightField.setHorizontalAlignment(JTextField.RIGHT);
-        rightField.setBorder(emptyBorder);
         rightField.setFont(font);
         add(rightField);
     }
