@@ -67,10 +67,13 @@ public class Engine {
             count(board.getCount());
             executor.shutdown();
             try {
-                executor.awaitTermination(1, TimeUnit.MINUTES);
+                if (!executor.awaitTermination(5, TimeUnit.MINUTES)) {
+                    errors.incrementAndGet();
+                    throw new RuntimeException("Timeout while waiting for worker threads termination");
+                }
             } catch (InterruptedException e) {
                 errors.incrementAndGet();
-                throw new RuntimeException(e);
+                throw new RuntimeException("Main solution thread interrupted: ", e);
             } finally {
                 solution(Board.SENTINEL);
             }
@@ -83,13 +86,13 @@ public class Engine {
                     return solutionBuffer.take();
                 } catch (InterruptedException e) {
                     errors.incrementAndGet();
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Solution stream interrupted ", e);
                 }
             };
             return Stream.iterate(solutionBuffer.take(), b -> b != Board.SENTINEL, take).filter(b -> b != Board.SENTINEL);
         } catch (InterruptedException e) {
             errors.incrementAndGet();
-            throw new RuntimeException(e);
+            throw new RuntimeException("Solution stream  interrupted ", e);
         }
     }
 
@@ -153,7 +156,7 @@ public class Engine {
                 stop();
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Interrupted while offering solution ",e);
         }
     }
 
@@ -165,7 +168,7 @@ public class Engine {
         try {
             concurrent.acquire();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Interrupted  while acquiring worker thread ", e);
         }
     }
 

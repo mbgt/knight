@@ -128,6 +128,7 @@ public class Main {
 
             @Override
             protected void done() {
+                model.setErrors(engine.errors());
                 synchronized (RUN) {
                     if (model.getMode() == RUN) {
                         model.setMode(VIEW);

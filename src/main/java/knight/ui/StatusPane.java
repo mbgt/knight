@@ -56,7 +56,11 @@ public class StatusPane extends JPanel {
                 setInfo(String.format("Zeit (s): %8.3f", 0.0f));
             }
             case VIEW -> {
-                setStatus(model.getMoves(), model.getSolutions());
+                if (model.getErrors() == 0) {
+                    setStatus(model.getMoves(), model.getSolutions());
+                } else {
+                    rightField.setText("Errors (see log): " + model.getErrors());
+                }
                 setInfo(String.format("Zeit (s): %8.3f", 0.001f * (System.currentTimeMillis() - startTicks)));
             }
         }

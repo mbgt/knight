@@ -23,7 +23,7 @@ import static knight.ui.Model.Mode.RUN;
 import static knight.ui.Model.Mode.SET;
 
 class BoardPane extends JPanel {
-    private static final Font FONT = new Font("Verdana", Font.BOLD, 24);
+    private static final Font FONT = new Font("DejaVu", Font.BOLD, 28);
 
     private final Model model;
 

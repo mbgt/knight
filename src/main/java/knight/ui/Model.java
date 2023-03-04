@@ -42,6 +42,7 @@ public class Model {
     private Dim startPosition = new Dim(0,0);
     private long moves;
     private int solutions;
+    private int errors;
 
     private int threadCount = Engine.DEFAULT_THREAD_COUNT;
 
@@ -58,6 +59,7 @@ public class Model {
         if (mode == Mode.SET) {
             moves = 0;
             solutions = 0;
+            errors = 0;
             setBoard(new Board(getBoardSize().dim()));
         }
         modeListener.forEach(listener -> listener.accept(mode));
@@ -117,6 +119,13 @@ public class Model {
         this.solutions = solutions;
     }
 
+    public int getErrors() {
+        return errors;
+    }
+
+    public void setErrors(int errors) {
+        this.errors = errors;
+    }
 
     public int getThreadCount() {
         return threadCount;

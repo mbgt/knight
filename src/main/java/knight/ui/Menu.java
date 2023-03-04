@@ -10,8 +10,7 @@ import static knight.ui.Model.Mode.RUN;
 import static knight.ui.Model.Mode.VIEW;
 
 public class Menu extends JMenuBar {
-
-    private static final int[] THREAD_COUNT = {1, 2, 4, 8, 12, 16};
+    private static final int[] THREAD_COUNT = {1, 2, 4, 6, 8, 12, 16};
 
     private final Model model;
     private final ActionListener actionListener;
